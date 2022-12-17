@@ -1,4 +1,4 @@
-const { fastify } = require("fastify");
+const express = require("express");
 const bot = require("./core/bot");
 const session = require("./core/session");
 const auth = require("./middlewares/auth");
@@ -34,7 +34,7 @@ process.on("uncaughtException", (error) => {
 // Launching
 require("./database");
 
-const app = fastify();
+const app = express();
 
 if (config.isProduction) {
   logger.info("Production mode is ON");
@@ -51,17 +51,8 @@ if (config.isProduction) {
 async function launchWebhook() {
   const webhook = await bot.createWebhook({ domain: config.webhookDomain });
   app.get("/ping", (req, rep) => rep.send("Pong!"));
-  app.post(`/telegraf/${bot.secretPathComponent()}`, (req, rep) =>{
-    console.log(req.body);
-    webhook(req.raw, rep.raw)
-  }
-  );
-  app.listen(
-    {
-      port: config.port,
-    },
-    () => {
-      logger.info(`Production server is listening on port ${config.port}`);
-    }
-  );
+  app.use(webhook);
+  app.listen(config.port, () => {
+    logger.info(`Production server is listening on port ${config.port}`);
+  });
 }
